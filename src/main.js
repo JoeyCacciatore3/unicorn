@@ -601,7 +601,7 @@ const mkFoe = (x, y, k, p) => {
   scaleFoe(f); f.hp = f.mx; return f;
 };
 // DARKCORN boss foe: now SEEDED into the world (always present + visible) instead of proximity-spawned.
-const mkBoss = (bx, by, bi) => { const f = { x: bx * T, y: by * T, vx: 0, k: 3, bi, bit: 1 << bi, fl: 0, t: 0, cap: 19 }; scaleFoe(f); f.hp = f.mx; return f; };   // cap 19 = CHARGE+HOP+SHOOT (apex). Pursuit + attacks read uniform consts (ASPD/CSPD) — no per-boss spd.
+const mkBoss = (bx, by, bi) => { const f = { x: bx * T, y: by * T, hx: bx * T, vx: 0, k: 3, bi, bit: 1 << bi, fl: 0, t: 0, cap: 19 }; scaleFoe(f); f.hp = f.mx; return f; };   // hx (arena anchor) unused by leash (bosses skip it, !f.bit) — it's the eject-toward-home direction for the SPIKE-EJECT base rule.   // cap 19 = CHARGE+HOP+SHOOT (apex). Pursuit + attacks read uniform consts (ASPD/CSPD) — no per-boss spd.
 const seedFoes = () => [   // single source for init/load/fresh/respawn (foesX = decorative fill, held out of world.js ledge-grow to keep sky-ladder RNG stable)
   ...[...seeds.foes, ...seeds.foesX].map(([x, y, k, p]) => mkFoe(x * T, y * T, k, p)),   // 4th seed element p=1 → patroller
   ...seeds.bosses.filter(([, , bi]) => bs[bi] !== 2).map(([bx, by, bi]) => mkBoss(bx, by, bi)),   // ALWAYS-PRESENT bosses — skip only the killed ones (bs===2)
@@ -894,7 +894,7 @@ const step = (dt) => {
     // STAND-OFF (`so`): a non-boss SHOOT/CHARGE hunter (cap&17) in NORMAL pursuit (sp===ASPD, not winding-up/dashing) HOLDS once within SO px — stops advancing, so ranged kinds ring the player instead of piling into melee. Bosses + HOP kinds ignore it and close.
     // LEASH: a disengaged HUNTER >40px from its seed anchor walks HOME through the same guarded mover (target swaps pl.x → f.hx) instead of wandering — pre-leash, idle hunters kept their last vx and migrated across zones (arenas drained, rest areas collected drifters). 40px hysteresis = a small natural pacing territory around home. Patrollers (!near forever) and bosses (near forever once aggro'd) are untouched.
     const home = !near && !f.pat && !f.bit && Math.abs(f.hx - f.x) > 40;
-    if ((near || home) && f.gr) { dir ??= Math.sign((near ? pl.x + PW / 2 : f.hx) - f.x - fs / 2); const ax = f.x + (dir > 0 ? fs : 0), so = near && !f.bit && f.cap & 17 && !chg && sp === ASPD && Math.abs(pl.x - f.x) < SO; f.vx = so ? 0 : sp && (f.bit || !solid(ax + dir, f.y + fs / 2) && tile((ax + dir * 3) / T | 0, (f.y + fs + 6) / T | 0) % 3) ? dir * sp : chg ? 0 : f.vx; }
+    if ((near || home) && f.gr) { dir ??= Math.sign((near ? pl.x + PW / 2 : f.hx) - f.x - fs / 2); const ax = f.x + (dir > 0 ? fs : 0), so = near && !f.bit && f.cap & 17 && !chg && sp === ASPD && Math.abs(pl.x - f.x) < SO; f.vx = so ? 0 : sp && (f.bit || !solid(ax + dir, f.y + fs / 2) && tile((ax + dir * 3) / T | 0, (f.y + fs + 6) / T | 0) % 3) ? dir * sp : sp ? -dir * ASPD : 0; }   // BLOCKED branch: when the path ahead is a spike moat / pit (or a wall), a grounded non-boss TURNS AWAY at walk speed (-dir*ASPD) instead of freezing — so a non-hopper (charger/caster: no cap&2 hop) PACES the moat edge rather than twitching its charge-cycle in place. This is ONLY the moat-edge pacing job; escaping a spike a foe is ALREADY standing on is the landing eject's job (SPIKE → BOUNCE, below). sp===0 (charge wind-up gather) still holds at 0 — the dir-lock pause tell survives. Bosses (f.bit) never reach this branch (they advance via the f.bit clause).
     // ATTACK: HOP (bit 2) — tier-1 leapers + bosses; leap toward the player on a fixed cadence.
     if (f.cap & 2) {
       f.hop = (f.hop || 1) - dt;
@@ -914,9 +914,16 @@ const step = (dt) => {
 
     f.gr = 0;   // per-frame ground reset: keeps gr accurate so a foe that falls off a ledge can't hop mid-air (hop-gate) and edge-turn stays correct. Re-set to 1 the same frame on landing below.
     f.vy = Math.min(FALLCAP, (f.vy || 0) + GV * dt); f.y += f.vy * dt;   // FALLCAP for foes too — no tile tunneling
-    const ty = (f.y + fs) / T | 0;
-    if (f.vy > 0 && tile((f.x + fs / 2) / T | 0, ty)) {   // land on ANY non-air tile — solid, platform, AND spike (same rule as drops L936). Foes take no spike damage; letting them REST ON spike tops means a foe knocked onto a moat hops back out in ≤1 cadence — the embedded state was a permanent trap beside any 2-tall wall (hop apex 43.5px < climb). Walk/hop gates still use %3 → spikes stay a no-go moat for pathing.
-      f.y = ty * T - fs; f.vy = 0; f.gr = 1;
+    // MUSHROOM BOUNCE (foes + bosses) — same springs/collider + same -510 vertical pop as the player (L804): fast descent (vy>80) onto the cap top launches. Fires BEFORE the tile-landing snap, like the player, so a foe springs where the cap is drawn. Step-1's SPIKE→BOUNCE makes any resulting spike landing self-eject, so bouncing is safe by construction. HORIZONTAL is REDIRECTED to a gentle home-ward ASPD (not the pre-bounce velocity): a boss charge-dashing (CSPD 150) onto a pad would otherwise keep that speed through the whole airborne arc and drift ~9 tiles out of its arena; redirecting caps the drift to ~4 tiles AND aims it back toward the home/arena anchor. Also kills pad-pogo (a straight drop gets a horizontal component off the cap). Bosses included (operator: "darkcorns too").
+    if (f.vy > 80) for (const [bx, br] of BOUNCE) { const cx = bx * T + 8, cy = br * T - 20; if (Math.abs(f.x + fs / 2 - cx) < 12 && f.y + fs >= cy && f.y + fs < cy + 26) { f.y = cy - fs; f.vy = -510; f.gr = 0; f.vx = (Math.sign(f.hx - f.x) || Math.sign(f.vx) || 1) * ASPD; break; } }
+    const ty = (f.y + fs) / T | 0, lt = tile((f.x + fs / 2) / T | 0, ty);
+    if (f.vy > 0 && lt) {                                          // landed on a non-air tile
+      f.y = ty * T - fs; f.vy = 0; f.gr = 1;                       // SOLID/PLATFORM → rest on top
+      if (lt === 3) {                                             // SPIKE → BOUNCE: the ONE base invariant that makes "stuck on spikes" impossible for EVERY kind via EVERY vector (fall, knockback, seed error, mushroom bounce). Ejects a full hop toward the NEAREST side the foe can actually STAND on (solid/platform floor + clear head), scanning out ≤6 tiles and preferring the home side on a tie — robust vs a moat with a flanking WALL (e.g. the RED h3 hill), where aiming blindly at home would vertical-pogo against the wall. Self-repeats across a wide moat; retires the per-kind spike escapes (hop-cap / turn-away). PATHING still uses %3 so foes never voluntarily ENTER a moat — this only fires once already on spikes.
+        const tx = (f.x + fs / 2) / T | 0, hd = Math.sign(f.hx - f.x) || 1; let d = hd;
+        for (let k = 1, st = j => tile(tx + j, ty) % 3 && !tile(tx + j, ty - 1); k <= 6; k++) { if (st(k * hd)) break; if (st(-k * hd)) { d = -hd; break; } }   // st(j): tile j cols over is standable (floor %3 truthy=solid/plat, head clear)
+        f.vy = -JV; f.gr = 0; f.vx = d * ASPD;
+      }
     }
     f.x += f.vx * dt;
     // WALL SNAP + EDGE TURN — two-stage horizontal collision (mirrors player L744-746 pattern)

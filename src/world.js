@@ -87,6 +87,11 @@ const MEADOW = {
     [161, 12, 6, 1, 2],                    // meadow-rest upper tier (3 above the t162 h3 hill top) — alcoves r12 → high-route ridge r11 without dropping to r15
     [255, 11, 5, 1, 2],                    // hub-east upper island (DJ rise 4 from the t258 r15 step)
     [277, 11, 5, 1, 2],                    // ORANGE-approach upper island (4 above the t278 h3 hill top; rise 3 from the t282 r14 step)
+    // ---- SKY TOP TIER (r8-10) — a THIRD altitude above the r11-13 islands so the MID-MAP sky has real vertical play: DJ up from a second-tier island (rise 3) onto a top perch, then bounce between the two-platform clusters. Mid-map only (PEAK/CANOPY/summit already carry tall natural terrain rows 4-9).
+    [60, 10, 4, 1, 2], [69, 9, 4, 1, 2],   // WEST top perch: x71 r12 island → r9 (rise 3) → r10 step (gap 6)
+    [150, 9, 4, 1, 2], [159, 9, 5, 1, 2],  // MEADOW top perch: flat r9 pair, each rise 3 above the r12 islands (x152, x161); gap 5 between
+    [253, 8, 5, 1, 2], [262, 9, 4, 1, 2],  // HUB top perch: x255 r11 → r8 (rise 3) → r9 step (gap 5)
+    [275, 8, 5, 1, 2], [284, 9, 4, 1, 2],  // ORANGE top perch: x277 r11 → r8 (rise 3) → r9 step (gap 5)
     // ---- SKY FREEDOM PASS (B44) — mid-gap steps in the 5 remaining sparse stretches; t51 also FIXES a latent rise-4 law break (r15 t56 → r11 t46 westbound had no legal step)
     [51, 13, 4, 1, 2],                     // CANOPY-west chain step: r15 t56 → r13 → r11 t46 (rises 2+2, gaps 1)
     [111, 14, 4, 1, 2],                    // hop-step over the t115-117 cave pit (r13 t106 ↔ r15 t116, rises 1)
@@ -183,7 +188,7 @@ const MEADOW = {
     [8, 15, 1, 1], [14, 12, 4, 1], [8, 9, 1, 1], [14, 6, 4, 1], // PEAK climb (patrol)
     [38, 15, 1, 1], [44, 11, 4, 1],                             // CANOPY climb (patrol)
     [104, 13, 1, 1], [172, 11, 4, 1],                           // MEADOW sky (patrol)
-    [312, 12, 1, 1], [324, 12, 4, 1],                           // EASTRUN gauntlet sky arc (patrol — timing obstacles over the spike run)
+    [312, 11, 1, 1], [324, 11, 4, 1],                           // EASTRUN gauntlet sky arc (patrol — timing obstacles ON the r12 one-way platforms over the spike run). y=11 (NOT 12): feet-tile must equal the platform row (r12) to land ON it; at y=12 the feet-tile is r13 (air) → the one-way platform is MISSED and the patroller falls onto the r18 spikes below, where a patroller (never `near` → never hops) is trapped forever (2-enemies-stuck-on-spikes bug).
     [420, 11, 1, 1], [432, 9, 4, 1],                            // SUMMIT staircase (patrol)
     [450, 7, 1],                                                // GREEN arena (HUNTER — boss-arena participant on the landing)
     // ARENA / GAUNTLET ground foes — flat carries the tough kinds (charge k3/k5, shoot k2/k6). CLUSTERED, none in rests/hub.

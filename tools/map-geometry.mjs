@@ -106,6 +106,13 @@ for (const [x, y] of [...seeds.foes, ...(seeds.foesX || []), ...seeds.bosses]) {
   else if (cell === SPIKE) E(`RULE6 FOESEED ${tag}: seeded inside a spike tile`);
   if (cell !== PLAT && below !== SOLID && below !== PLAT) E(`RULE6 FOESEED ${tag}: no standable support at (${x},${y + 1}) — mid-air seed (spike/air below)`);
   if (at(x, y - 1) === SOLID) Wn(`RULE6 FOESEED ${tag}: solid ceiling directly overhead — 20px foe is head-cramped here`);
+  // FALL-TO-SPIKE: the game lands a foe when its center-column feet-tile (row y+1 at spawn) hits a non-air tile.
+  // A one-way platform AT the seed row (y) is NOT under the feet (y+1) → it is MISSED and the foe falls straight
+  // through. If the eventual landing tile is a SPIKE, a patroller (never hops) or non-hopper is trapped there
+  // permanently. This is the class that shipped the 2-gauntlet-patrollers-on-spikes bug (seed y=12 vs platform r12;
+  // the fix is y=platformRow-1 so the feet-tile equals the platform row). ERROR.
+  let fr = y + 1; while (fr < H && at(x, fr) === AIR) fr++;
+  if (at(x, fr) === SPIKE) E(`RULE6 FALL ${tag}: falls to a SPIKE at (${x},${fr}) — trapped (feet-tile row y+1 must be the landing surface; a platform AT the seed row is missed — seed y = platformRow - 1)`);
 }
 
 // ============ RULE 7 — SPIKE TRAP-CLASS POCKETS (audit-D hardening) ============
