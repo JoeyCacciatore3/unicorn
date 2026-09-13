@@ -98,15 +98,15 @@ player) and differ only by **sprite + one attack verb + HP/damage**. Attack bits
 | k | Sprite | Tier / attack | Color |
 |---|---|---|---|
 | 1 | walker-small (separate head, 4 legs) | HOP (4 HP, fragile) | pink |
-| 4 | walker-fast (racing lean, speed lines) | HOP (5 HP, tankier) | orange |
-| 2 | walker-tent (dome + 3 wiggling tendril-legs) | SHOOT (8 HP) | teal |
-| 6 | walker-spike (dome + 4 downward spiky legs) | SHOOT (9 HP) | light-purple |
-| 3 | caster (hooded robe) | CHARGE (12 HP, heavy) | violet |
-| 5 | walker-hop (tall body, chunky legs) | CHARGE (6 HP, glass) | gold |
+| 4 | walker-fast (racing lean, speed lines) | HOP (6 HP, tankier) | orange |
+| 2 | walker-tent (dome + 3 wiggling tendril-legs) | SHOOT (10 HP) | teal |
+| 6 | walker-spike (dome + 4 downward spiky legs) | SHOOT (11 HP) | light-purple |
+| 3 | caster (hooded robe) | CHARGE+HOP (14 HP, heavy) | violet |
+| 5 | walker-hop (tall body, chunky legs) | CHARGE+HOP (8 HP, glass) | gold |
 
 - **Two behavior modes** (per-placement, not per-kind): **HUNTER** (default — engages when near) and
   **PATROL** (optional 4th seed element `[x,y,k,1]` → a Goomba-style walker that ignores you,
-  contact-damage only). 17 sky/platform foes are PATROLLERS (never chase — pure terrain obstacles); the 37 ground/cave foes are leashed HUNTERS that return home when disengaged.
+  contact-damage only). 10 high sky-ladder / gauntlet foes are PATROLLERS (never chase — pure terrain obstacles); the 44 ground/cave/low-perch foes are leashed HUNTERS that return home when disengaged.
 - **Stand-off de-pile:** SHOOT/CHARGE hunters stop ~`SO`=100 px out and ring you instead of all
   homing to the same point (only HOP kinds close to contact) — clusters read as a formation, not a
   dogpile.
@@ -114,7 +114,9 @@ player) and differ only by **sprite + one attack verb + HP/damage**. Attack bits
   tough CHARGE/SHOOT kinds live on flat ground where traversal is free.
 - SHOOT kinds show a stationary skull at their center for ~0.5s before firing — the same skull then
   launches as the projectile. CHARGE kinds telegraph with a dir-lock wind-up + committed dash (no
-  skull). Contact damage is universal.
+  skull) and now also LEAP toward you between charges (they carry the HOP cap too — a charge-safe
+  hop that only fires at pursuit speed, never mid-dash). Contact damage is universal. Spikes never
+  trap a foe: any enemy that lands on spikes ejects a hop toward the nearest standable side.
 
 Roster is **54 regular foes** (k1×10 · k2×9 · k3×8 · k4×9 · k5×9 · k6×9 — the first-east charger swapped to a gentle hopper per the Goomba law), elevation-rule placed.
 

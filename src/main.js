@@ -532,9 +532,9 @@ let nearNpc = 0;                                  // GREATCORN proximity flag (J
 let paused = 0, helpOn = 0, savePop = 0, dPop = 0, luT = 0, navCD = 0;   // pause overlay; help overlay; save popup (EXIT GAME); dPop = DROP-gear confirm gate (0 closed · 1 BACK selected · 2 DROP selected); level-up banner deadline; menu joystick-nav cooldown
 // DIALOGUE — dq = active script (INTRO or a 1-line re-talk quip) or 0=closed · di = current bubble · tqi = re-talk cycle index.
 // Freezes the sim (like the menu); tap/key advances ONE bubble (comedic beat), closing past the last line.
-let dq = 0, di = 0, tqi = 0;
-const talk = (s) => { dq = s; di = 0; };
-const adv = () => { if (++di >= dq.length) { if (dq === WIN) for (let i = 0; i < 24; i++) spray(cam.x + Math.random() * VW, cam.y + Math.random() * VH, 6); if (dq === INTRO && lvl < 2) gainXp(need()); dq = 0; hp = mHP(); mn = mMN(); hf = IFR; hfc = 14; } };   // INTRO close = GREATCORN's "free level": a NORMAL LV1→2 via the SAME gainXp (+2 stat, banner+fanfare+restore) — no bonus; base stats already start at 2. lvl<2 guards single-fire. WIN close = screen-wide rainbow CELEBRATION (24×6=144 bits).
+let dq = 0, di = 0, tqi = 0, dgt = 0;   // dgt = dialogue-advance gate (ms wall-clock): min display time per bubble so an input-momentum double-tap can't mash-skip a beat — esp. the LAST INTRO bubble (potion/heal teaching), which used to be dismissed straight into the LV1→2 level-up before it could be read.
+const talk = (s) => { dq = s; di = 0; dgt = Date.now() + 550; };
+const adv = () => { if (Date.now() < dgt) return; dgt = Date.now() + 550; if (++di >= dq.length) { if (dq === WIN) for (let i = 0; i < 24; i++) spray(cam.x + Math.random() * VW, cam.y + Math.random() * VH, 6); if (dq === INTRO && lvl < 2) gainXp(need()); dq = 0; hp = mHP(); mn = mMN(); hf = IFR; hfc = 14; } };   // INTRO close = GREATCORN's "free level": a NORMAL LV1→2 via the SAME gainXp (+2 stat, banner+fanfare+restore) — no bonus; base stats already start at 2. lvl<2 guards single-fire. WIN close = screen-wide rainbow CELEBRATION (24×6=144 bits).
 
 // bag selection is derived: the selected item is inv[aRow-5] (undefined for non-bag rows, since inv.length ≤ BAG is invariant).
 // Chest reward: item shower only (no heal — heals come from potions / HEAL spell / level-up).
@@ -898,13 +898,15 @@ const step = (dt) => {
     // ATTACK: HOP (bit 2) — tier-1 leapers + bosses; leap toward the player on a fixed cadence.
     if (f.cap & 2) {
       f.hop = (f.hop || 1) - dt;
-      if (f.hop <= 0 && f.gr && near) {
+      if (f.hop <= 0 && f.gr && near && (f.bit || sp === ASPD)) {
+        // CHARGE-SAFE (f.bit || sp === ASPD): a non-boss only hops at PURSUIT speed — NEVER mid-windup (sp=0)
+        // or mid-dash (sp=CSPD). Chargers (k3/k5, now cap&2) hop between charges, not during the dash: a
+        // CSPD-speed airborne arc travels ~90px and would overshoot this ASPD-tuned (~35px) landing-gate,
+        // flinging the foe over moats onto spikes — the "glitch across the screen" class. Pure hoppers
+        // (k1/k4) always have sp===ASPD so this is a no-op for them; bosses hop unconditionally as before.
         // LANDING-GATE — a hop arc travels ~35px (ASPD 56 × 0.62s airtime ≈ 2.2 tiles); probe the TRUE
-        // landing tile in the travel dir, turn back instead of launching (stops hoppers leaping into
-        // pits/spikes). Was s*T (1 tile) — half the real arc, so hops overshot onto spikes; now that the
-        // mover is grounded-only the committed arc lands exactly where this gate looked.
-        // Bosses hop unconditionally (arenas are flat + build-audited).
-        const s = Math.sign(f.vx) || 1;
+        // landing tile in the travel dir, turn back instead of launching (stops hoppers leaping into pits/spikes).
+        const s = Math.sign(f.vx) || Math.sign(pl.x + PW / 2 - f.x - fs / 2) || 1;   // aim at the player when vx≈0 (stand-off zeroed it) — a cap&17 kind held within SO used to always hop RIGHT (sign(0)||1); now it leaps toward the player.
         if (f.bit || tile((f.x + fs / 2 + s * 35) / T | 0, (f.y + fs + 6) / T | 0) % 3) {
           f.vy = -JV; f.gr = 0; f.vx ||= s * ASPD; f.hop = 2.1;   // uniform launch (JV) + cadence (~1.5s ground rest, UNIFIED with the 2.1s attack re-arm beat); vx||= anti-freeze after a strike-stop
         } else { f.vx *= -1; f.hop = .3; }

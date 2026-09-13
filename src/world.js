@@ -128,7 +128,7 @@ const MEADOW = {
     [210, 18, 3, 10, 0],                   // entry/exit shaft (surface → chamber floor r28)
     [202, 25, 20, 3, 0],                   // entry chamber — air rows 25-27, floor r28 (cols 202-221)
     [206, 27, 5, 1, 2], [214, 27, 4, 1, 2],// chamber ledges (r27, 2t headroom) — chest 12 + foe
-    [210, 24, 3, 1, 2], [210, 21, 3, 1, 2],// climb-out rungs
+    [210, 24, 3, 1, 2], [210, 20, 3, 1, 2],// climb-out rungs (top rung r21->r20: a boss that chases off the r18 surface into the shaft lands 2t down and can hop back out; at r21 the 3t climb was just past the 2.7t hop apex → boss trapped. Player triple-jumps the r24->r20 gap fine.)
     [193, 26, 9, 2, 0],                    // SKINNY TUNNEL (2-tall) entry chamber → west pocket (cols 193-201, rows 26-27, rock ceiling r25)
     [183, 25, 11, 3, 0],                   // WEST POCKET — open chamber, air rows 25-27, floor r28 (cols 183-193); floor foe, loops back out via the entry shaft
 
@@ -186,8 +186,8 @@ const MEADOW = {
     // bosses latch. Three legible tiers, zero overlap. ([450,7] GREEN-landing foe stays a HUNTER — it's
     // an arena fight participant, not a platform dweller.)
     [8, 15, 1, 1], [14, 12, 4, 1], [8, 9, 1, 1], [14, 6, 4, 1], // PEAK climb (patrol)
-    [38, 15, 1, 1], [44, 11, 4, 1],                             // CANOPY climb (patrol)
-    [104, 13, 1, 1], [172, 11, 4, 1],                           // MEADOW sky (patrol)
+    [38, 15, 1], [44, 11, 4, 1],                                // CANOPY: x38 k1 = HUNTER (leaps at nearby players — more visible jumping); x44 high climb stays patrol
+    [104, 13, 1], [172, 11, 4, 1],                              // MEADOW sky: x104 k1 = HUNTER (leaps at players near its perch); x172 high k4 stays patrol
     [312, 11, 1, 1], [324, 11, 4, 1],                           // EASTRUN gauntlet sky arc (patrol — timing obstacles ON the r12 one-way platforms over the spike run). y=11 (NOT 12): feet-tile must equal the platform row (r12) to land ON it; at y=12 the feet-tile is r13 (air) → the one-way platform is MISSED and the patroller falls onto the r18 spikes below, where a patroller (never `near` → never hops) is trapped forever (2-enemies-stuck-on-spikes bug).
     [420, 11, 1, 1], [432, 9, 4, 1],                            // SUMMIT staircase (patrol)
     [450, 7, 1],                                                // GREEN arena (HUNTER — boss-arena participant on the landing)
@@ -211,8 +211,8 @@ const MEADOW = {
     [344, 28, 2], [348, 28, 6],                                // EAST upper chamber — floor foes
     [352, 35, 2], [360, 35, 3], [382, 35, 5], [386, 35, 3],    // EAST deep halls — floor foes (seat r35 → floor r36), populate the deep chambers
     // Surface/sky fill to complete 9-of-each (hop kinds on platforms per elevation rule; charge/shoot on flat).
-    [172, 14, 1, 1], [268, 14, 1, 1],                          // k1 fill (sky — patrol, same rule as seeds.foes sky group)
-    [116, 15, 4, 1], [282, 14, 4, 1], [408, 13, 4, 1],         // k4 fill (sky — patrol)
+    [172, 14, 1], [268, 14, 1],                                // k1 fill (sky) — HUNTERS: leap at players who come near the perch, then leash home (the HOP tier finally jumps; PEAK/SUMMIT ladders + gauntlet stay patrol)
+    [116, 15, 4], [282, 14, 4], [408, 13, 4],                  // k4 fill (sky) — HUNTERS: hopping leapers that engage nearby players
     [34, 17, 2], [186, 27, 2],                                 // k2 fill — 2nd seated in the CENTRAL west pocket (floor foe r27→r28), 3rd in the EAST deep hall
     [88, 17, 3], [420, 17, 3],                                 // k3 fill (ground)
     [144, 17, 5], [286, 17, 5], [436, 17, 5],                  // k5 fill (ground)
