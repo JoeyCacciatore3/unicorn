@@ -66,7 +66,7 @@ design/cover_square.png   ✅ FRESH B42 (2026-09-12) — 1080×1080 crop of the 
 | 4 | `05_world.png` | Platforming vista — equipped colored unicorn mid-jump over spikes, distant enemies, chests + full control overlay |
 | 5 | `02_intro.png` | GREATCORN quest intro ("Reclaim every rainbow. One per DARKCORN. There are seven.") — equipped unicorn + full HUD + touch controls |
 
-> Superseded sets (do NOT upload): `_preequip/` (bare white unicorn), `_prev_overlay/`, `_stale_sep05/`, `_new/`, `_stale_aug31/`.
+> `design/screenshots/` is clean — only the seven live-capture PNGs (`01_title` … `07_boss`) remain. Older superseded sets were removed on the 2026-09-12 media-refresh.
 
 ---
 
@@ -74,17 +74,19 @@ design/cover_square.png   ✅ FRESH B42 (2026-09-12) — 1080×1080 crop of the 
 ```
 design/trailer.mp4   ✅ FRESH B42 (2026-09-12) — 38s 1080p live-gameplay cut (title → intro → moat/goomba + on-camera verb hint → sky hops → cave → boss kill + rainbow bank); B28-proven encode recipe (animation/crf15/yuv420p + silent AAC + faststart)
 ```
-> Encoded with the verified best-practice recipe for flat-color pixel art: `-tune animation -crf 15 -pix_fmt yuv420p`, silent AAC track (needed for Twitter/X autoplay), `+faststart` for web streaming. Features the EQUIPPED colored unicorn (matches the screenshots). Structure: crisp title card (2.5s) → 1.8× gameplay body (movement, combat, menu flash showing equipped slots) → end card ("HOOVES OF HOPE / Unicorns and Rainbows / js13kGames 2026"). No play URL baked in (publish not yet live). Old cuts → `trailer_bareunicorn_prev.mp4`, `trailer_720_prev.mp4`, `trailer_sep05_stale.mp4`.
+> Encoded with the verified best-practice recipe for flat-color pixel art: `-tune animation -crf 15 -pix_fmt yuv420p`, silent AAC track (needed for Twitter/X autoplay), `+faststart` for web streaming. Features the EQUIPPED colored unicorn (matches the screenshots). Structure: crisp title card (2.5s) → 1.8× gameplay body (movement, combat, menu flash showing equipped slots) → end card ("HOOVES OF HOPE / Unicorns and Rainbows / js13kGames 2026"). No play URL baked in (publish not yet live). Older stale cuts were removed on the 2026-09-12 media-refresh.
 
 **GIF for the js13k description:** `design/gif/gameplay.gif` ✅ FRESH B42 — 640×360, 8s sky-hop loop, 3.0 MB (palettegen 192c + bayer, gifsicle -O3). Embed in the Markdown description (GIF-in-description remains a js13k discoverability best-practice).
 
 ---
 
 ## 7. ACHIEVEMENTS — thresholds need CLI re-tune (Wavedash-side)
-Verify live state:
+Verify live state (count + thresholds):
 ```
 wavedash achievement list --game-id j97697bsqqnzpcxbmpdhfs3hen8cp5yv
 ```
+> Local `design/achievements/` has 8 PNGs (table below). Definitive State records a **9th server-side achievement — ASCENDED** (recreated 2026-09-12); confirm via CLI, and if present, add a matching `design/achievements/ASCENDED.png` before Sep 20 (or accept the platform's emoji fallback).
+
 Correct thresholds for the CURRENT 7-boss / 7-shard / 20-chest / LV20-cap build:
 
 | ID | Correct threshold | Action |
@@ -109,7 +111,7 @@ wavedash achievement update PRISMATIC --description "..." --game-id j97697bsqqnz
 3. **Tags** → Section 3
 4. **Cover art** → `design/cover_square.png` (✅ fresh B42, ready to upload)
 5. **Screenshots** → upload the FRESH B42 set (Section 5), gameplay first
-6. **Trailer** → shoot fresh `design/trailer.mp4` from live gameplay (optional)
-7. **Achievements** → re-tune 3 thresholds via CLI (Section 7)
+6. **Trailer** → `design/trailer.mp4` already fresh (Sep 12); upload as-is (optional but recommended)
+7. **Achievements** → re-tune 3 thresholds via CLI (Section 7); verify 8 vs 9 live count (Definitive State records a 9th, ASCENDED)
 
 **Deadlines:** js13k submit ≤ Sep 13 13:00 CEST · Wavedash publish ≤ Sep 20 CEST.

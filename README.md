@@ -162,11 +162,12 @@ npm install
 npm run build    # esbuild → terser → roadroller → inline → zip → ECT
 ```
 Six build gates: **map-audit** (traversal — no stuck cells, all bosses/chests reachable at
-double/triple-jump tier, Return Law), **spike-audit** (chest + procedural-scatter spike safety),
+double/triple-jump tier, Return Law), **map-geometry** (stable-math platform/cave spacing +
+headroom + mushroom placement), **spike-audit** (chest + procedural-scatter spike safety),
 **pal-check** (PAL length ⇔ gear-color range), minified-check + packed-check (artifact integrity),
 and the **13,312-byte** budget (also: no external URLs, no unprefixed localStorage).
 
-**Current: 12,954 / 13,312 B (97.3%) — 358 B free.** See `SIZELOG.md` for the live-updated tail and
+**Current: 13,229 / 13,312 B (99.4%) — 83 B free.** See `SIZELOG.md` for the live-updated tail and
 the "Definitive state" knowledge entry for the authoritative snapshot.
 
 ## Save format
@@ -178,12 +179,16 @@ R(runtime) }`. Not saved: `col` (derived from `eq` at load), `mute` (runtime-onl
 foes/chests (reseeded).
 
 ## Structure
-- `src/main.js` — the game (~1,380 lines)
-- `src/world.js` — the 3-band tile map + entity seeds + procedural scatter (~190 lines)
+- `src/main.js` — the game (~1,445 lines)
+- `src/world.js` — the 3-band tile map + entity seeds + procedural scatter (~270 lines)
 - `src/data.js` — static tables (palette/zones, foe tiers, gear, GREAT CORN dialogue)
 - `build.mjs` — full pipeline + compliance gates (also emits the Wavedash variant)
 - `tools/map-audit.mjs` — traversal prover (bosses/chests reachable, Return Law)
+- `tools/map-geometry.mjs` — stable-math geometry gate (platform spacing, headroom, cave clearance)
 - `tools/spike-audit.mjs` — placement safety (chest + scatter spike overlap)
 - `tools/pal-check.mjs` — PAL length ⇔ gear color-range guard
+- `tools/guards.mjs` — single index of every build-time invariant + output-artifact checks (compliance / storage / packed-stream)
+- `tools/pin-guard.mjs` — release-time check that pinned roadroller flags still beat a fresh `-O2` search
+- `tools/capture-build.mjs` — headless screenshot/video capture harness (design assets)
 - `tools/map-editor.html` — local map-authoring tool (untracked, not shipped)
 - `dist/wavedash/` — Wavedash platform variant (leaderboards + stats via a byte-free wrapper)

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "license": "MIT",
+  "author": "Joey Cacciatore",
   "description": "UNI-CORN, Hooves of Hope — js13kGames 2026 entry (theme: Unicorns and Rainbows)",
+  "keywords": ["js13k", "js13kgames", "js13kgames-2026", "game", "platformer", "pixel-art"],
   "engines": {
     "node": ">=20"
   },

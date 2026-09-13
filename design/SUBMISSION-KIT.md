@@ -8,7 +8,7 @@ Copy is paste-ready. **All facts re-verified against `src/*.js` 2026-09-12 at B4
 
 > **Ground-truth rule:** if any figure here disagrees with `src/data.js` + `src/main.js` + `src/world.js`, the source wins — re-grep before trusting.
 
-## Verified game facts (from source, batch 43)
+## Verified game facts (from source, batch 48-52)
 - **Title (player-facing):** the title screen renders `UNICORN` (one word, rainbow letters) over `HOOVES OF HOPE`; the cover art matches. → **`UNICORN, Hooves of Hope`**.
 - **Physics:** player and every enemy share ONE jump/gravity model (`GV=900`, launch `JV=280`) — arcs are identical and learnable; enemies no longer out-jump you. The player keeps a smaller, nimbler collision box.
 - **6 enemy kinds (`FT`) organized into 3 ATTACK TIERS × 2 kinds** — pursuit speed is UNIFORM for every foe (they all home at one speed); the **attack** is what separates them (cap bits: 1=shoot, 2=hop, 16=charge). B47: the CHARGE kinds (k3/k5) also carry the HOP cap (cap 18 = charge+hop) so they LEAP toward you between charges — HP/dmg unchanged, roles still read clearly (leaping rushers vs snipers vs pure hoppers):
@@ -77,8 +77,8 @@ Portal: **https://wavedash.com/dev-portal** → **Hooves Of Hope** (slug `hooves
 
 ---
 
-## Achievements — 8 on record (needs live CLI verification)
-Verify current live state with `wavedash achievement list --game-id j97697bsqqnzpcxbmpdhfs3hen8cp5yv`. Icons: `design/achievements/*.png` (256×256). Thresholds below reflect the CURRENT 7-boss / 7-shard / 20-chest / LV20-cap build.
+## Achievements — 8 icons local · 9 on server per Definitive State (verify with CLI)
+Verify current live state with `wavedash achievement list --game-id j97697bsqqnzpcxbmpdhfs3hen8cp5yv`. Local icons: 8 PNGs in `design/achievements/*.png` (256×256). The Definitive State + Wavedash knowledge entry both record a 9th achievement — **ASCENDED** (recreated 2026-09-12) — server-side; no local PNG. If the CLI confirms 9 live, either add an ASCENDED.png before Sep 20 or rely on the platform's emoji fallback. Thresholds below reflect the CURRENT 7-boss / 7-shard / 20-chest / LV20-cap build.
 
 | Identifier | Title | Correct threshold (current build) | Note |
 |---|---|---|---|
@@ -91,7 +91,7 @@ Verify current live state with `wavedash achievement list --game-id j97697bsqqnz
 | EXPLORER | Explorer | reach all **7** zones | re-tune — was "5 zones" |
 | HOARDER | Hoarder | open all **20** chests | ✓ valid |
 
-**Glue status:** wrapped build emits `Wavedash.init({})` (minimum contract). No `setAchievement()` calls yet — wiring is byte-free (lives in `dist/wavedash/index.html` outside the 13 KB zip). Decide before Sep 20.
+**Glue status:** wrapped build emits `Wavedash.init({})` + creates 5 leaderboards (Highest Level, Bosses Defeated, Total Damage, Total Kills, Fastest Clear) + pushes 6 stats (KILLS, CHESTS, BOSSES, LEVEL, GEAR, FASTCLEAR) with `storeStats()`, sig-deduped, on a 5s interval plus `pagehide` / `visibilitychange`. Achievements unlock server-side from those stats — no `setAchievement()` calls required. All glue lives in `dist/wavedash/index.html` outside the 13 KB zip (byte-free). SDK glue verified 2026-09-13 via mocked `window.Wavedash`: init fires, all 5 leaderboards created with correct sort/display, score uploads + stat pushes fire, `bosses<7` correctly withholds Fastest Clear + sets `FASTCLEAR=0`, 0 console errors.
 
 ---
 
@@ -113,7 +113,7 @@ design/
 |---|---|---|---|
 | 1 | Register js13k draft, claim name `UNICORN, Hooves of Hope` | js13kgames.com/submit | NOW — locks name; tests roadroller zip. Deadline Sep 13 13:00 CEST |
 | 2 | Firefox DevTools zero-console-errors check on `dist/game.zip` | local | Before each js13k upload (disqualifying criterion) |
-| 3 | ✅ ~~Re-shoot all media~~ — DONE 2026-09-12: 7 screenshots + trailer + GIF + cover, all live-captured vs current build | local | done |
+| 3 | Re-capture `design/screenshots/01_title.png` + `design/cover_square.png` against the shipped B48-52 title (EAST RUN palette). Screenshots 02-07 + trailer + GIF are current. | local | before final Wavedash upload |
 | 4 | Wavedash store paste-in (title, desc, tags, cover, screenshots, trailer) | Portal (see `WAVEDASH-UPLOAD.md`) | Anytime — review has lag |
 | 5 | Re-tune EXPLORER / HALFWAY / PRISMATIC thresholds | `wavedash achievement update` | Before Sep 20 |
 | 6 | Final zip → js13k form | js13kgames.com/submit | ≤ Sep 13 13:00 CEST |
@@ -122,7 +122,7 @@ design/
 ### ⏸ Deferred (operator decision)
 | # | Action | Why |
 |---|---|---|
-| ⏸ | Wavedash `setAchievement()` wiring | Byte-free (wrapper outside 13 KB zip); raises Wavedash prize competitiveness. Decide before Sep 20. |
+| ⏸ | Add local `ASCENDED.png` icon if the CLI confirms it as the 9th live achievement | Currently server-side only per Definitive State; platform emoji fallback works but a matching icon completes the set. |
 | ⏸ | Mobile category — separate submission | Touch input works; rules allow multi-game entries but same-game-across-platforms is BANNED. |
 
 ---
