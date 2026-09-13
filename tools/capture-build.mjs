@@ -48,7 +48,7 @@ const HOOK = ';try{window.__G={'
   + 'boss:(bi)=>{bs[bi]=0;},'             // reset a boss so it re-spawns on approach
   + 'get deathT(){return deathT},'        // read the death timer (VBEAT+1 → 0) to sample the death beat + home transition
   + 'kill:()=>{deathT=VBEAT+1;dBurst=.22;spray(pl.x+PW/2,pl.y+PH/2,14,1);},'  // reproduce the real death beat (main.js hp<=0): frozen pause + skull burst, then teleport-home transition
-  + 'get parts(){return parts},get dq(){return dq},get WIN(){return WIN},'  // inspect particle/dialogue state (win-celebration verification)
+  + 'get parts(){return parts},get bs(){return bs},get foes(){return foes},get time(){return time},get winT(){return winT},'  // inspect particle/boss/foe/clock/win-finish state (hs already exposed above; finale verification)
   // power(): level up, set stats, equip one gear per slot (real equip()), leave 2 unspent
   // points so the blue "+N" pulse shows in the menu shot. Abilities are always-on now
   // (skill tree removed 2026-09) — no unlock step needed; every unicorn has the full kit.

@@ -53,8 +53,8 @@ export const RC = ['#ff5d6c','#ff9d3c','#ffd75e','#9fe89a','#8cf','#c47fe0','#c9
 export const ZB = [
   [32,  '#4a3a26', '#c0c8d0', '#5a7a6a', '#c0c8d0', '#4a9ad8'],   // PEAK (BLUE) — x-band scaled 600→480 (compact rebuild). snow-cap white top+accent, slate-green alpine foliage.
   [90,  '#5a3a2a', '#3a8a52', '#3a8a52', '#7a5a3a', '#5ab5ef'],   // CANOPY (YELLOW) — warm loam dirt, wood-brown accent.
-  [224, '#5a3a1e', '#4a9a3a', '#4a9a3a', '#888888', '#6bc5ff'],   // MEADOW (RED) — original identity (spawn zone)
-  [381, '#6a4a22', '#8a9a32', '#8a9a32', '#9a8a62', '#7ecfe8'],   // EAST RUN (ORANGE) — dry gold savanna
+  [224, '#5a3a1e', '#4a9a3a', '#4a9a3a', '#888888', '#6bc5ff'],   // MEADOW (RED) — original identity (west of centre)
+  [381, '#6a4a22', '#8a9a32', '#8a9a32', '#9a8a62', '#7ecfe8'],   // EAST RUN (ORANGE) — dry gold savanna — SPAWN ZONE (tile 240=W/2 falls here; the title screen palette derives from this)
   [480, '#52341e', '#3a7a5e', '#3a7a5e', '#7a8a92', '#4a9ad8'],   // SUMMIT (GREEN) — deep teal, storm sky
   [0, '#32283e', '#6a4a8a', '#8a5aca', '#5a5a6a', '#1a1626'],   // UNDER-DEPTHS (VIOLET zone, upper caves rows 24-29 / y>384) — col0 (xEnd) NEVER read: underground selected by y-threshold, not the x-find. dead value.
   [0, '#1a1832', '#3a4a7a', '#6a5acd', '#4a4a72', '#080814'],   // UNDER-CAVERN (INDIGO zone, deep tier rows 30-36 / y>480) — col0 dead (see above). foliage reuses PAL[16] literal for LZ.
@@ -75,5 +75,3 @@ export const INTRO = ["Oh! You're awake!", "~...who are you?", "The Greatcorn.|O
 export const TALK = ["Rainbows won't fetch|themselves, pony.", "You've got this.|Probably.", "Stop bouncing at me.|I'm not a mushroom.", "This mane grooms|itself. Out of|respect."];
 // DEATH — reuses the dialogue system for a respawn beat: fires at the paddock once the death beat + home transition completes (deathT crosses 0).
 export const DEATH = ["~Ugh...", INTRO[4]];   // REUSE INTRO[4] = "They hit hard.|Hurt? A potion,|or talk to me." — the defeat + heal reminder lands exactly when relevant (you just died). Reference, NOT a duplicated literal (roadroller has no copy mechanism → a copy costs full price). COUPLING: INTRO must stay defined above + index 4 = the hurt/heal line; recheck if INTRO is reordered.
-// WIN — talk to GREATCORN with all 7 rainbows banked (rainbows()===bs.length).
-export const WIN = ["All seven! History|will remember|MY name."];

@@ -23,7 +23,7 @@
 const SV = 46;
 
 import { T, W, H, SR, tile, seeds, DECO, BOUNCE, groundRow } from './world.js';    // map geometry + tiles + shared ground-snap
-import { PAL, mane3, dim, SLOT_STAT, SLOT_LBL, SC, FOECOL, FT, RBC, RC, ZB, I_MP, INTRO, TALK, DEATH, WIN } from './data.js'; // static lookup tables
+import { PAL, mane3, dim, SLOT_STAT, SLOT_LBL, SC, FOECOL, FT, RBC, RC, ZB, I_MP, INTRO, TALK, DEATH } from './data.js'; // static lookup tables
 
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const VW = 480, VH = 270;
@@ -53,7 +53,7 @@ let SS = 1, SOX = 0, SOY = 0;                    // view transform (for pointer 
 const J_KEYS = ['Space', 'KeyW', 'ArrowUp'];        // JUMP — Space canonical, W (WASD up), ArrowUp (arcade tradition)
 
 const keys = new Set();
-let jbuf = 0, started = 0, touch = 0, vh = 0, ch = 0, ph = 0;   // vh/ch/ph = ONE-SHOT HINT FAMILY (session-scoped, NOT in resetTransient/save; desktop-only — touch has labeled buttons/visible boxes): each names keys at point of need ONCE then never again. vh: first hunter aggro → "J DASH / L SHOOT" · ch: first chest proximity → "JUMP OPEN" · ph: first potion pickup → "I HP / O MP". Full reference lives in the ? help overlay.
+let jbuf = 0, started = 0, touch = 0, vh = 0, ch = 0, ph = 0;   // vh/ch/ph = ONE-SHOT HINT FAMILY (session-scoped, NOT in resetTransient/save; desktop-only — touch has labeled buttons/visible boxes), each fires ONCE then never again. vh: first free-control frame AFTER the intro stamps the time → a brief GOLDEN ARROW points at the ? button (the full control reference lives there) · ch: first chest proximity → "JUMP OPEN" · ph: first potion pickup → "I HP / O MP".
 // ---------- title / name-entry / class-select flow ---------
 // phase 0 = title (tMode: 0 slot list / 1 name entry), 2 = playing (started=1).
 let phase = 0, ent = '', pName = 'HORSE';
@@ -349,6 +349,8 @@ const rText = (s, y, f) => {
   const w = ctx.measureText(s).width, ch = w / s.length;
   for (let i = 0; i < s.length; i++) { const cx = VW / 2 - w / 2 + ch * i; ctx.strokeText(s[i], cx, y); ctx.fillStyle = RC[i % 7]; ctx.fillText(s[i], cx, y); }
 };
+// LEFT-ALIGNED rainbow per-letter text (title's RC cycle) at (x,y) in the CURRENT font — used by the top HUD header. Monospace → one char width advances all glyphs; T2 carries each letter's dark outline.
+const rHud = (s, x, y) => { const cw = ctx.measureText('M').width; for (let i = 0; i < s.length; i++) { ctx.fillStyle = RC[i % 7]; T2(s[i], x + i * cw, y); } };
 // Shared portrait panel — renders the identity card (title bar, bordered box with
 // HP bar at top, live unicorn silhouette) used by both the PAUSE overlay and the
 // CHARACTER-CREATE screen.
@@ -372,9 +374,9 @@ const topHUD = () => {
   // each in its bar colour) with THREE EQUAL bars (74×9), numbers centred inside (white). XP = xp/need(), 'MAX' at CAP.
   ctx.font = 'bold 8px monospace'; ctx.textAlign = 'left';
   const hdr = 'LV' + lvl + ' ' + pName;
-  ctx.fillStyle = '#8cf'; T2(hdr, 5, 11);        // action-blue LV+name (top row)..
+  rHud(hdr, 5, 11);                               // LV+name in title RC rainbow (per-letter), same 8px size
   const rcx = 5 + ctx.measureText(hdr).width + 16;                    // rainbow icon right of name
-  ctx.lineWidth = 1; rArc(rcx, 11, 7, 1); T2('×' + rainbows(), rcx + 9, 11);
+  ctx.lineWidth = 1; rArc(rcx, 11, 7, 1); rHud('×' + rainbows(), rcx + 9, 11);   // ×count also rainbow
   const cap = lvl >= CAP, row = (y, lbl, c, frac, num) => {           // one row = colour label (left) + equal bar + white centred number
     ctx.textAlign = 'left'; ctx.fillStyle = c; T2(lbl, 5, y + 7);
     bar(20, y, 74, 9, frac, c);
@@ -527,14 +529,14 @@ const SX = 240 * T, SY = NGY - PH;                // spawn point (CENTERED at ti
 const NPCCOL = [7, 2, 2, 7];                       // GREATCORN isolated palette: purple body/hooves (PAL[7]), gold mane/horn (PAL[2]) — immune to player gear/color
 const NSC = 10 / 7;                                // unicorn render scale, shared by player/GREATCORN/DARKCORN (boss fs=20 ÷ 14-tall bbox).
 const pl = { x: SX, y: SY, vx: 0, vy: 0, gr: 0, face: 1, coyote: 0, air: 0, inv: 0, t: 0 };   // gr = on-ground flag
-let deathT = 0, dBurst = 0;   // deathT = death-beat/transition timer · dBurst = throttle for the ongoing skull bursts during the death beat
+let deathT = 0, dBurst = 0, winT = 0;   // deathT = death-beat/transition timer · dBurst = burst throttle (death skulls AND win rainbows — mutually exclusive) · winT = WIN-FINISH timer: last-boss celebration, then a HARD CUT to the title (game over)
 let nearNpc = 0;                                  // GREATCORN proximity flag (JUMP-to-interact re-talk quips)
 let paused = 0, helpOn = 0, savePop = 0, dPop = 0, luT = 0, navCD = 0;   // pause overlay; help overlay; save popup (EXIT GAME); dPop = DROP-gear confirm gate (0 closed · 1 BACK selected · 2 DROP selected); level-up banner deadline; menu joystick-nav cooldown
 // DIALOGUE — dq = active script (INTRO or a 1-line re-talk quip) or 0=closed · di = current bubble · tqi = re-talk cycle index.
 // Freezes the sim (like the menu); tap/key advances ONE bubble (comedic beat), closing past the last line.
 let dq = 0, di = 0, tqi = 0, dgt = 0;   // dgt = dialogue-advance gate (ms wall-clock): min display time per bubble so an input-momentum double-tap can't mash-skip a beat — esp. the LAST INTRO bubble (potion/heal teaching), which used to be dismissed straight into the LV1→2 level-up before it could be read.
 const talk = (s) => { dq = s; di = 0; dgt = Date.now() + 550; };
-const adv = () => { if (Date.now() < dgt) return; dgt = Date.now() + 550; if (++di >= dq.length) { if (dq === WIN) for (let i = 0; i < 24; i++) spray(cam.x + Math.random() * VW, cam.y + Math.random() * VH, 6); if (dq === INTRO && lvl < 2) gainXp(need()); dq = 0; hp = mHP(); mn = mMN(); hf = IFR; hfc = 14; } };   // INTRO close = GREATCORN's "free level": a NORMAL LV1→2 via the SAME gainXp (+2 stat, banner+fanfare+restore) — no bonus; base stats already start at 2. lvl<2 guards single-fire. WIN close = screen-wide rainbow CELEBRATION (24×6=144 bits).
+const adv = () => { if (Date.now() < dgt) return; dgt = Date.now() + 550; if (++di >= dq.length) { if (dq === INTRO && lvl < 2) gainXp(need()); dq = 0; hp = mHP(); mn = mMN(); hf = IFR; hfc = 14; } };   // INTRO close = GREATCORN's "free level": a NORMAL LV1→2 via the SAME gainXp (+2 stat, banner+fanfare+restore) — no bonus; base stats already start at 2. lvl<2 guards single-fire. (No WIN branch — the ending is now the last-DarkCorn kill itself, see strike().)
 
 // bag selection is derived: the selected item is inv[aRow-5] (undefined for non-bag rows, since inv.length ≤ BAG is invariant).
 // Chest reward: item shower only (no heal — heals come from potions / HEAL spell / level-up).
@@ -581,11 +583,11 @@ const fresh = () => {
 const resetTransient = () => {
   pl.vx = pl.vy = pl.air = pl.coyote = pl.inv = pl.gr = pl.t = 0;
   pl.face = 1;
-  jbuf = dashT = dashCd = dropT = deathT = hs = shk = hf = luT = dq = di = tqi = navCD = 0;
+  jbuf = dashT = dashCd = dropT = deathT = winT = hs = shk = hf = luT = dq = di = tqi = navCD = 0;
   shots.length = fbolts.length = parts.length = flies.length = drops.length = 0;   // entity arrays are transient too — clearing here (not just in fresh()) fixes the EXIT→CONTINUE bleed where stale bolts/drops from the previous session resumed after load(), and covers death-respawn uniformly.
   cam.x = SX - VW / 2; cam.y = SY - VH / 2;   // snap camera to the paddock spawn — all three callers (fresh/load/respawn) put the player there; without this, CONTINUE lerped the camera across the map from its stale position.
 };
-const interact = () => { if (nearNpc) { talk(rainbows() === bs.length ? WIN : [TALK[tqi++ % TALK.length]]); return 1; } if (nearChest >= 0) { openChest(nearChest); return 1; } };   // all 7 rainbows banked → WIN dialogue (celebration on close, adv()); else the re-talk quip cycle // JUMP-near: NPC → re-talk quip · chest → open
+const interact = () => { if (nearNpc) { talk([TALK[tqi++ % TALK.length]]); return 1; } if (nearChest >= 0) { openChest(nearChest); return 1; } };   // JUMP-near: NPC → re-talk quip cycle (the win is finalized at the last-DarkCorn kill, not here) · chest → open
 // Player-level progression: every 4 levels adds 1 scale pip.
 // player over-levels; bosses reuse the same formula and additionally scale via bi (+dm).
 
@@ -699,7 +701,7 @@ const strike = (f, mag) => {
     spray(f.x, f.y, 5, 1); sfx(500, 200, .08, 'square', .09); gainXp(FT[f.k][0] + FT[f.k][1] + (f.bit ? 37 + 6 * f.bi : 0)); // foe death — HIGH punchy square (500→200, .08s) = "impact landed." Deliberately distinct from player-hurt sawtooth (140→55, .25s) = "pain received." XP = DIFFICULTY-PROPORTIONAL: base HP + base DM from FT[k] (k1=7/k2=12/k3=17/k4=8/k5=10/k6=13) — was `min(k,3)*4` which paid on the KIND INDEX (capped 3), so light fast k4 (5HP) earned the same 12 as tanky k3 (12HP).
     if (f.bit) spawnDrop(f.x, f.y, 2); else if (Math.random() < .12 + st[4] * .03) spawnDrop(f.x, f.y, 1);   // boss = guaranteed 2 (same system, 100%); else one drop at the same % as crit (.12 + lk*.03)
     if (f.bit && bs[f.bi] !== 2) {                              // BOSS FIRST KILL — INSTANT BANK on kill.
-      bs[f.bi] = 2; hs = VBEAT; fanfare();   // VICTORY BEAT: VBEAT hitstop + rainbow arch flourish (draw) + fanfare. Menu/banner render is gated on hs<=0 so a same-hit level-up can't cover the finale.
+      bs[f.bi] = 2; fanfare(); hs = VBEAT; if (rainbows() === bs.length) { winT = 3; dBurst = 0; for (let i = 0; i < 30; i++) spray(cam.x + Math.random() * VW, cam.y + Math.random() * VH, 6); }   // VICTORY BEAT: VBEAT hitstop + arch flourish (draw) + fanfare. LAST DARKCORN = THE ENDING → screen-wide 180-bit burst NOW, then winT (see step) runs a sustained rainbow celebration + VICTORY banner and HARD-CUTS to the title. Menu/banner gated on hs<=0 so a same-hit level-up can't cover the finale.
     }
     save(); return 1;   // AUTOSAVE on EVERY kill — persists kc(kills)/dd(damage)/bs(boss bank) so the byte-free Wavedash wrapper (reads localStorage) sees current KILLS/BOSSES immediately for stats+leaderboards, not stale-until-next-level-up. One call covers boss + regular kills.
   }
@@ -752,6 +754,7 @@ const step = (dt) => {
   if (dq || savePop || helpOn) return;             // dialogue / save-popup / help overlays freeze the sim — they swallow input, so the world must not act while the player can't (fairness)
   rt += dt; time += dt; jbuf -= dt; pl.inv -= dt; pl.t += dt; dashT -= dt; dashCd -= dt; dropT -= dt; shk -= dt; hf -= dt;
 
+  if (started && !vh && !touch) vh = time;         // GOLDEN HELP ARROW (once/session, desktop): this line runs only in free control — dialogue done + level-up menu closed — so the FIRST such frame is exactly "after the intro". Stamps the fire time; topHUD draws a brief golden arrow at the ? button, then it fades.
   if (deathT > 0) {
     const wt = deathT; deathT -= dt;
     for (const p of parts) { p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; }   // DEATH BEAT: keep particles ALIVE while the world is frozen (this block returns before the normal parts tick) — only the skulls move, so death reads clearly.
@@ -762,6 +765,14 @@ const step = (dt) => {
     return;
   }
   if (!started) return;
+  if (winT > 0) {                                  // WIN FINISH — mirrors the death beat: world frozen, the rainbow burst animates + sustained bursts rain, arch + VICTORY banner in draw; at 0 → HARD CUT to the title (game over). After `if (!started) return`, so exit / new-game can't resurrect it.
+    winT -= dt;
+    for (const p of parts) { p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; }
+    prune(parts);
+    dBurst -= dt; if (dBurst <= 0) { spray(cam.x + Math.random() * VW, cam.y + Math.random() * VH, 8); dBurst = .16; }
+    if (winT <= 0) { save(); paused = helpOn = savePop = started = phase = tMode = sPop = 0; }   // HARD FINISH → title (save already ran at the kill; this re-save is harmless)
+    return;
+  }
 
   // -- drop-through: DOWN on a one-way platform falls through it (S doubles as down here) -
   const onPlat = pl.gr && tile((pl.x + PW / 2) / T | 0, (pl.y + PH + 1) / T | 0) === 2;
@@ -870,7 +881,6 @@ const step = (dt) => {
     // near (they never engage). Hunters need BOTH |dx|<170 AND |dy|<64 (4 tiles) — a foe more
     // than ~4 tiles above/below you disengages (stops through-floor tracking). Bosses always near.
     const near = !f.pat && (f.bit || Math.abs(pl.x - f.x) < 170 && Math.abs(pl.y - f.y) < 64);
-    if (near && !f.bit && !vh && !touch) { vh = 1; fly(0, 0, 'J DASH / L SHOOT', '#fffdf5', 0, 1); }   // VERB HINT (once/session, desktop): the first approaching hunter creates the question, this answers it — attack verbs named at point of need, in the same above-head popup channel every other feedback uses. !f.bit: bosses have near=1 at any distance (the latch), which would fire this at spawn.
     // RANGED (cap 1) — gate the COUNTDOWN, not just the shot: bosses always in range, regular foes need `near`.
     if (f.cap & 1 && near) {
       f.rc = (f.rc ?? 1.5 + Math.random()) - dt;
@@ -992,15 +1002,15 @@ const draw = () => {
 
   // SKY — bright blue gradient, white clouds, cheerful Zelda/Mario feel
   // BACKGROUND = flat blue sky + parallax clouds.
-  const ZC = !phase ? ZB[2] : pl.y > 480 ? ZB[6] : pl.y > 384 ? ZB[5] : ZB.find(z => pl.x < z[0] * T);   // title=meadow; underground split by DEPTH: y>480 (=30*16, deep INDIGO lower-tier halls) = INDIGO ZB[6], y>384 (=24*16, shallow VIOLET/CENTRAL upper chambers) = VIOLET ZB[5]; surface = x-bands
+  const ZC = !phase ? ZB.find(z => SX < z[0] * T) : pl.y > 480 ? ZB[6] : pl.y > 384 ? ZB[5] : ZB.find(z => pl.x < z[0] * T);   // TITLE uses the SPAWN zone (self-syncs to wherever tile 240 lands — was hardcoded ZB[2] MEADOW, stale after the compact rebuild moved spawn into EAST RUN/ZB[3]; drives BOTH sky ZC[5] and ground [GD,GT,GF,GA] so the title scene now matches the GREATCORN opening exactly). Underground split by DEPTH: y>480 (=30*16, deep INDIGO lower-tier halls) = INDIGO ZB[6], y>384 (=24*16, shallow VIOLET/CENTRAL upper chambers) = VIOLET ZB[5]; surface = x-bands
   ctx.fillStyle = ZC[5]; ctx.fillRect(0, 0, VW, VH);                        // banded sky
   // CLOUDS — procedural puffs spanning the whole map (parallax .15), culled off-screen.
   // Primes in bitwise ops give deterministic pseudo-random spread. y ≥ 50 clears HUD.
   ctx.fillStyle = 'rgba(255,255,255,.7)';
   for (let ci = 0; ci < 24; ci++) {
-    const sx = ci * 82 + (ci * 37 & 31) - cam.x * .15;
+    const sx = ci * 98 + (ci * 37 & 31) - cam.x * .15;   // 98 (was 82): more gap between adjacent puffs
     if (sx < -60 || sx > VW + 60) continue;
-    const cy = 52 + (ci * 73 & 31), cw = 30 + (ci * 41 & 31);
+    const cy = 2 + (ci * 73 & 47), cw = 30 + (ci * 41 & 31);   // raised to the very top (2, was 52 — clips slightly off-top, intended) + taller spread &47 (was &31) so they fill the upper sky instead of a mid two-row band hidden behind platforms
     ctx.fillRect(sx, cy, cw, 8); ctx.fillRect(sx + 4, cy - 4, cw - 8, 6); ctx.fillRect(sx + 8, cy + 6, cw - 16, 5);
   }
 
@@ -1150,7 +1160,7 @@ const draw = () => {
       if (f.rc < .7) skull(fs / 2, fs / 2, .7, 1, '#ff5d6c');   // TELL — red skull at center: SHOOT imminent only (f.rc<.7). CHARGE has NO skull (skull reads as projectile); its wind-up is the dir-lock pause + committed dash. undefined f.rc → false → non-shooters show none.
     }
     ctx.restore();
-    bar(f.x, f.y - 3, fs, 1, f.hp / f.mx, '#6cf279');   // ENEMY floating HP bar — PERSISTENT: always shown (full or damaged), was gated on f.hp<f.mx. bar() draws the dark track + green fill so a full bar reads clearly.
+    bar(f.x, f.y - 4, fs, 2, f.hp / f.mx, '#6cf279');   // ENEMY floating HP bar — PERSISTENT: always shown (full or damaged). Height 2 (was 1, read too thin) nudged up 1px so it thickens upward, clear of the body.
   }
   for (const s of shots) { ctx.lineWidth = 1; rArc(s.x, s.y, 5, .7); }   // magic bolt = rainbow arc projectile — r=5 (10px caliber, matches skull), bolder 1px bands
   for (const b of fbolts) skull(b.x, b.y, 1.3, 1, '#ff5d6c');   // foe RANGED bolt = flying RED skull (danger colour), u=1.3 ≈ 9×10px caliber matching the r=5 rainbow.
@@ -1175,7 +1185,7 @@ const draw = () => {
   drawUo(pl.gr && Math.abs(pl.vx) > 20 ? Math.sin(pl.t * 16) * 3 : (pl.gr ? 0 : 2));
   col = bkc;
   ctx.restore();
-  bar(pl.x - 5, pl.y - 12, 20, 1, hp / mHP(), '#6cf279');   // PLAYER floating HP bar — SAME 20×1 size as foes (bar() convention), centred over the 10px body (pl.x-5), hovering higher at pl.y-12, world-space.
+  bar(pl.x - 5, pl.y - 13, 20, 2, hp / mHP(), '#6cf279');   // PLAYER floating HP bar — SAME 20×2 size as foes (height 2, was 1 — read too thin), centred over the 10px body (pl.x-5), hovering at pl.y-13, world-space.
 
   // Item drops — pixel sprites, bob gently, fade IN at spawn (drops never despawn — cleared only on player death)
   for (const d of drops) {
@@ -1201,7 +1211,7 @@ const draw = () => {
   if (dq && started) { const s = dq[di], u = s[0] === '~'; bubble(u ? pl.x + PW / 2 : NX, u ? pl.y - 9 : NGY - 31, u ? s.slice(1) : s); }   // bubble stems from the speaker's head — '~' = player reply, else GREATCORN; hidden on title.
   else if (nearNpc && started) bubble(NX, NGY - 31, '...', 18);   // TALK-AVAILABLE indicator: in GREATCORN range + not mid-dialogue → a small chat bubble (SAME bubble() style, width 18) with a '...' speech glyph pops above his head, mirroring the ✓ interact prompt on the action button.
   ctx.translate((cam.x - so) | 0, (cam.y - so) | 0);            // undo world translate (incl. shake)
-  if (hs > 0) { ctx.globalAlpha = Math.min(1, hs * 4); arch(VW / 2, 130); ctx.globalAlpha = 1; }   // BOSS-WIN FLOURISH: reuses the EXACT title arch() at the SAME position (VW/2,130) — pixel-identical to the title rainbow.
+  if (hs > 0 || winT > 0) { ctx.globalAlpha = Math.min(1, (hs || winT) * 4); arch(VW / 2, 130); if (winT > 0) rText('VICTORY', 62); ctx.globalAlpha = 1; }   // BOSS-WIN FLOURISH: title arch at (VW/2,130). The WIN FINISH also holds a rainbow VICTORY banner through winT (the hard-finish celebration) before the cut to title.
 
   // ---------- HUD (gameplay-only overlays: level-up banner) ---------
   // Top-left LV/name/rainbow/bars live in topHUD() below (persistent, also visible in the menu).
@@ -1340,6 +1350,13 @@ const draw = () => {
     ctx.fillRect(hx + 3, iy + 5, 2, 3); ctx.beginPath(); ctx.moveTo(hx + 5, iy + 5); ctx.lineTo(hx + 8, iy + 3); ctx.lineTo(hx + 8, iy + 10); ctx.lineTo(hx + 5, iy + 8); ctx.fill();
     if (mute) { ctx.strokeStyle = '#e33'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(hx + 2, iy + 10); ctx.lineTo(hx + 10, iy + 2); ctx.stroke(); }
     box(xx); xm(xx);                                            // ✕ back/exit (corner) — the ONLY ✕ on the top bar
+    // POST-INTRO GOLDEN ARROW (desktop, once/session) — a single gold arrow bobs just under the ? button pointing UP at it; holds ~4s then fades over the final 1s. One elegant pointer to the FULL control reference (replaces the old over-unicorn key popup / bottom strip).
+    if (vh && !touch && time - vh < 5 && !paused && !dq && !helpOn && !savePop) {
+      const ax = VW - 50, ay = 20 + Math.sin(time * 6) * 2;
+      ctx.globalAlpha = Math.min(1, 5 - (time - vh)); ctx.strokeStyle = RC[time * 5 % 7 | 0]; ctx.lineWidth = 2;   // RAINBOW-CYCLING arrow (~5 colors/sec) — vibrant + on-theme, replaces the static gold that blended into the sky
+      ctx.beginPath(); ctx.moveTo(ax, ay + 11); ctx.lineTo(ax, ay); ctx.moveTo(ax - 4, ay + 4); ctx.lineTo(ax, ay); ctx.lineTo(ax + 4, ay + 4); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     // Save popup — centered: rainbow SAVED! + CONTINUE + EXIT GAME
     if (savePop) {
       fade(.8);
